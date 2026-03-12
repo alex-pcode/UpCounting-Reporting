@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cattr Time Report — UpCounting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .report-container {
+            max-width: 1100px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .report-header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: #fff;
+            padding: 32px 40px;
+        }
+
+        .report-header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .report-meta {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .report-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .summary-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 32px 40px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e8ecf1;
+        }
+
+        .summary-card .label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #777;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        /* Day accordion */
+        .days-section {
+            padding: 16px 40px 32px;
+        }
+
+        .days-section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        .day-block {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .day-block summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: #f8fafc;
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .day-block summary:hover {
+            background: #eef1f5;
+        }
+
+        .day-block summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .day-block[open] summary {
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .day-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .day-title .arrow {
+            transition: transform 0.2s;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .day-block[open] .day-title .arrow {
+            transform: rotate(90deg);
+        }
+
+        .day-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .day-stats .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .day-stats .stat-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .day-activity-bar {
+            width: 60px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        .day-activity-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        /* Intervals table inside day */
+        .day-content {
+            padding: 20px;
+        }
+
+        .day-content h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #777;
+            margin-bottom: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        thead th {
+            background: #f0f3f7;
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+            border-bottom: 2px solid #ddd;
+        }
+
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Screenshots grid */
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .screenshot-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+
+        .screenshot-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .screenshot-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+        }
+
+        .screenshot-info {
+            padding: 10px 14px;
+            background: #fafbfc;
+            border-top: 1px solid #eee;
+        }
+
+        .screenshot-info .time {
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .screenshot-info .task {
+            font-size: 13px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .screenshot-info .activity {
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .activity-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .activity-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .activity-high { background: #27ae60; }
+        .activity-mid { background: #f39c12; }
+        .activity-low { background: #e74c3c; }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .report-footer {
+            padding: 20px 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+        }
+
+        .toolbar {
+            padding: 16px 40px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .toolbar button {
+            padding: 6px 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            color: #555;
+            transition: all 0.15s;
+        }
+
+        .toolbar button:hover {
+            background: #f0f3f7;
+            border-color: #999;
+        }
+
+        @media print {
+            body { background: #fff; }
+            .report-container { box-shadow: none; margin: 0; }
+            .screenshot-card img { height: auto; }
+            .lightbox { display: none !important; }
+            .toolbar { display: none; }
+            .day-block { break-inside: avoid; }
+            .day-block[open] summary { border-bottom: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="report-container">
+    <!-- Header -->
+    <div class="report-header">
+        <h1>Time Tracking Report</h1>
+        <div class="report-meta">
+            <span><strong>Employee:</strong> Admin</span>
+            <span><strong>Period:</strong> March 10 – March 12, 2026</span>
+            <span><strong>Project:</strong> UpCounting</span>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-section">
+        <div class="summary-card">
+            <div class="label">Total Tracked</div>
+            <div class="value">1h 26m</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Avg. Activity</div>
+            <div class="value">80%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Intervals</div>
+            <div class="value">19</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Screenshots</div>
+            <div class="value">19</div>
+        </div>
+    </div>
+
+    <!-- Expand / Collapse toolbar -->
+    <div class="toolbar">
+        <button onclick="document.querySelectorAll('.day-block').forEach(d => d.open = true)">Expand All</button>
+        <button onclick="document.querySelectorAll('.day-block').forEach(d => d.open = false)">Collapse All</button>
+    </div>
+
+    <!-- Days -->
+    <div class="days-section">
+        <h2>Daily Breakdown</h2>
+
+        <!-- ==================== March 10, 2026 ==================== -->
+        <details class="day-block">
+            <summary>
+                <div class="day-title">
+                    <span class="arrow">&#9654;</span>
+                    Tuesday, March 10
+                </div>
+                <div class="day-stats">
+                    <div class="stat">Time: <span class="stat-value">10m 11s</span></div>
+                    <div class="stat">Activity: <span class="stat-value">91%</span>
+                        <div class="day-activity-bar"><div class="day-activity-fill activity-high" style="width: 91%"></div></div>
+                    </div>
+                    <div class="stat">Screenshots: <span class="stat-value">3</span></div>
+                </div>
+            </summary>
+            <div class="day-content">
+                <h3>Intervals</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Duration</th>
+                            <th>Task</th>
+                            <th>Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>17:03</td>
+                            <td>17:08</td>
+                            <td>5m 00s</td>
+                            <td>SEO</td>
+                            <td>95%</td>
+                        </tr>
+                        <tr>
+                            <td>17:08</td>
+                            <td>17:13</td>
+                            <td>5m 01s</td>
+                            <td>SEO</td>
+                            <td>78%</td>
+                        </tr>
+                        <tr>
+                            <td>17:13</td>
+                            <td>17:14</td>
+                            <td>0m 10s</td>
+                            <td>SEO</td>
+                            <td>100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Screenshots</h3>
+                <div class="screenshot-grid">
+                    <div class="screenshot-card">
+                        <img src="screenshots/6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b.jpg"
+                             alt="17:03" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">17:03</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 95%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 95%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35.jpg"
+                             alt="17:08" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">17:08</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 78%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 78%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce.jpg"
+                             alt="17:13" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">17:13</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 100%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 100%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- ==================== March 12, 2026 ==================== -->
+        <details class="day-block">
+            <summary>
+                <div class="day-title">
+                    <span class="arrow">&#9654;</span>
+                    Thursday, March 12
+                </div>
+                <div class="day-stats">
+                    <div class="stat">Time: <span class="stat-value">1h 15m 58s</span></div>
+                    <div class="stat">Activity: <span class="stat-value">79%</span>
+                        <div class="day-activity-bar"><div class="day-activity-fill activity-high" style="width: 79%"></div></div>
+                    </div>
+                    <div class="stat">Screenshots: <span class="stat-value">16</span></div>
+                </div>
+            </summary>
+            <div class="day-content">
+                <h3>Intervals</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Duration</th>
+                            <th>Task</th>
+                            <th>Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>14:51</td><td>14:56</td><td>5m 00s</td><td>SEO</td><td>90%</td></tr>
+                        <tr><td>14:56</td><td>15:01</td><td>5m 01s</td><td>SEO</td><td>77%</td></tr>
+                        <tr><td>15:01</td><td>15:06</td><td>5m 01s</td><td>SEO</td><td>63%</td></tr>
+                        <tr><td>15:06</td><td>15:11</td><td>5m 01s</td><td>SEO</td><td>76%</td></tr>
+                        <tr><td>15:11</td><td>15:16</td><td>5m 01s</td><td>SEO</td><td>64%</td></tr>
+                        <tr><td>15:16</td><td>15:21</td><td>5m 01s</td><td>SEO</td><td>57%</td></tr>
+                        <tr><td>15:21</td><td>15:26</td><td>5m 01s</td><td>SEO</td><td>76%</td></tr>
+                        <tr><td>15:26</td><td>15:31</td><td>5m 01s</td><td>SEO</td><td>91%</td></tr>
+                        <tr><td>15:31</td><td>15:36</td><td>5m 01s</td><td>SEO</td><td>83%</td></tr>
+                        <tr><td>15:36</td><td>15:41</td><td>5m 01s</td><td>SEO</td><td>84%</td></tr>
+                        <tr><td>15:41</td><td>15:46</td><td>5m 01s</td><td>SEO</td><td>73%</td></tr>
+                        <tr><td>15:46</td><td>15:51</td><td>5m 01s</td><td>SEO</td><td>73%</td></tr>
+                        <tr><td>15:51</td><td>15:56</td><td>5m 01s</td><td>SEO</td><td>81%</td></tr>
+                        <tr><td>15:56</td><td>16:01</td><td>5m 01s</td><td>SEO</td><td>84%</td></tr>
+                        <tr><td>16:01</td><td>16:06</td><td>5m 01s</td><td>SEO</td><td>81%</td></tr>
+                        <tr><td>16:06</td><td>16:07</td><td>0m 44s</td><td>SEO</td><td>93%</td></tr>
+                    </tbody>
+                </table>
+
+                <h3>Screenshots</h3>
+                <div class="screenshot-grid">
+                    <div class="screenshot-card">
+                        <img src="screenshots/4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a.jpg"
+                             alt="14:51" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">14:51</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 90%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 90%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d.jpg"
+                             alt="14:56" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">14:56</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 77%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 77%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/e7f6c011776e8db7cd330b54174fd76f7d0216b612387a5ffcfb81e6f0919683.jpg"
+                             alt="15:01" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:01</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 63%
+                                <div class="activity-bar"><div class="activity-fill activity-mid" style="width: 63%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451.jpg"
+                             alt="15:06" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:06</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 76%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 76%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/2c624232cdd221771294dfbb310aca000a0df6ac8b66b696d90ef06fdefb64a3.jpg"
+                             alt="15:11" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:11</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 64%
+                                <div class="activity-bar"><div class="activity-fill activity-mid" style="width: 64%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/19581e27de7ced00ff1ce50b2047e7a567c76b1cbaebabe5ef03f7c3017bb5b7.jpg"
+                             alt="15:16" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:16</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 57%
+                                <div class="activity-bar"><div class="activity-fill activity-mid" style="width: 57%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/4a44dc15364204a80fe80e9039455cc1608281820fe2b24f1e5233ade6af1dd5.jpg"
+                             alt="15:21" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:21</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 76%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 76%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/4fc82b26aecb47d2868c4efbe3581732a3e7cbcc6c2efb32062c08170a05eeb8.jpg"
+                             alt="15:26" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:26</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 91%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 91%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/6b51d431df5d7f141cbececcf79edf3dd861c3b4069f0b11661a3eefacbba918.jpg"
+                             alt="15:31" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:31</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 83%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 83%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/3fdba35f04dc8c462986c992bcf875546257113072a909c162f7e470e581e278.jpg"
+                             alt="15:36" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:36</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 84%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 84%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/8527a891e224136950ff32ca212b45bc93f69fbb801c3b1ebedac52775f99e61.jpg"
+                             alt="15:41" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:41</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 73%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 73%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/e629fa6598d732768f7c726b4b621285f9c3b85303900aa912017db7617d8bdb.jpg"
+                             alt="15:46" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:46</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 73%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 73%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/b17ef6d19c7a5b1ee83b907c595526dcb1eb06db8227d650d5dda0a9f4ce8cd9.jpg"
+                             alt="15:51" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:51</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 81%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 81%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/4523540f1504cd17100c4835e85b7eefd49911580f8efff0599a8f283be6b9e3.jpg"
+                             alt="15:56" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">15:56</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 84%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 84%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/4ec9599fc203d176a301536c2e091a19bc852759b255bd6818810a42c5fed14a.jpg"
+                             alt="16:01" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">16:01</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 81%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 81%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="screenshot-card">
+                        <img src="screenshots/9400f1b21cb527d7fa3d3eabba93557a18ebe7a2ca4e471cfe5e4c5b4ca7f767.jpg"
+                             alt="16:06" onclick="openLightbox(this.src)">
+                        <div class="screenshot-info">
+                            <div class="time">16:06</div>
+                            <div class="task">SEO — UpCounting</div>
+                            <div class="activity">Activity: 93%
+                                <div class="activity-bar"><div class="activity-fill activity-high" style="width: 93%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="report-footer">
+        Generated from Cattr &mdash; UpCounting Time Tracking Report &mdash; March 10–12, 2026
+    </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Full size screenshot">
+</div>
+
+<script>
+    function openLightbox(src) {
+        document.getElementById('lightbox-img').src = src;
+        document.getElementById('lightbox').classList.add('active');
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeLightbox();
+    });
+</script>
+
+</body>
+</html>
